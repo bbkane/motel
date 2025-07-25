@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -19,20 +18,6 @@ import (
 type TracerProviderWithShutdown interface {
 	trace.TracerProvider
 	Shutdown(ctx context.Context) error
-}
-
-type NoopTracerProvider struct {
-	noop.TracerProvider
-}
-
-func (NoopTracerProvider) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func NewNoopTracerProvider() TracerProviderWithShutdown {
-	return NoopTracerProvider{
-		TracerProvider: noop.NewTracerProvider(),
-	}
 }
 
 type NewTracerProviderFromEnvArgs struct {
