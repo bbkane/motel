@@ -3,6 +3,7 @@ package motel
 import (
 	"context"
 	"io"
+	"os"
 
 	"errors"
 
@@ -23,10 +24,10 @@ func (fe *FileExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func NewFileExporter(file io.WriteCloser) (*FileExporter, error) {
-	// TODO: be able to set opts so I can set no timestamps and test this thing.
+func NewFileExporter(file io.WriteCloser, opts ...stdouttrace.Option) (*FileExporter, error) {
+	opts = append(opts, stdouttrace.WithWriter(file))
 	exp, err := stdouttrace.New(
-		stdouttrace.WithWriter(file),
+		opts...,
 	)
 	if err != nil {
 		return nil, err
@@ -38,4 +39,16 @@ func NewFileExporter(file io.WriteCloser) (*FileExporter, error) {
 
 }
 
-// TODO: NewFileExporterFromEnv() (*FileExporter, error) {}
+func NewFileExporterFromEnv() (*FileExporter, error) {
+	filePath := os.Getenv("MOTEL_TRACES_FILE_EXPORTER_FILE_PATH")
+	if filePath == "" {
+		return nil, errors.New("MOTEL_TRACES_FILE_EXPORTER_FILE_PATH environment variable is not set")
+	}
+
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFileExporter(file)
+}

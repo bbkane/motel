@@ -25,6 +25,16 @@ type NewTracerProviderFromEnvArgs struct {
 	Version string
 }
 
+// NewTracerProviderFromEnv creates a new TracerProvider based on environment variables.
+//
+// Processor environment variables (defaults to "batch"):
+//   - MOTEL_SPAN_PROCESSOR=batch|sync
+//
+// Exporter environment variables (defaults to "none"):
+//   - MOTEL_TRACES_EXPORTER=file|none|otlpgrpc|otlphttp|stdout
+//   - MOTEL_TRACES_FILE_EXPORTER_FILE_PATH (required if MOTEL_TRACES_EXPORTER=file)
+//
+// See https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/ for other environment variables.
 func NewTracerProviderFromEnv(ctx context.Context, args NewTracerProviderFromEnvArgs) (TracerProviderWithShutdown, error) {
 
 	tracerResource := resource.NewWithAttributes(
@@ -40,9 +50,9 @@ func NewTracerProviderFromEnv(ctx context.Context, args NewTracerProviderFromEnv
 	var exporterErr error
 	exporterType := os.Getenv("MOTEL_TRACES_EXPORTER")
 	switch exporterType {
-	// case "file":
-	// 	// TODO - probably wrap the stdouttrace one but open a file and shut it down...
-	case "none":
+	case "file":
+		exporter, exporterErr = NewFileExporterFromEnv()
+	case "none", "": // "" means not set, so we default to noop
 		// TODO: this needs to be done with the trace provider, not the exporter...
 		// https://github.com/open-telemetry/opentelemetry-go/blob/main/trace/noop_test.go
 		tp := NewNoopTracerProvider()
@@ -55,7 +65,7 @@ func NewTracerProviderFromEnv(ctx context.Context, args NewTracerProviderFromEnv
 		exporter, exporterErr = otlptracehttp.New(ctx)
 	// case "prettyprint":
 	// 	// TODO - write this one like logos
-	case "stdout", "": // "" if not set
+	case "stdout":
 		exporter, exporterErr = stdouttrace.New(
 			stdouttrace.WithWriter(os.Stdout),
 		)
@@ -66,8 +76,18 @@ func NewTracerProviderFromEnv(ctx context.Context, args NewTracerProviderFromEnv
 		return nil, fmt.Errorf("failed to create exporter: %w", exporterErr)
 	}
 
+	var spanProcessor sdktrace.TracerProviderOption
+	switch os.Getenv("MOTEL_SPAN_PROCESSOR") {
+	case "sync":
+		spanProcessor = sdktrace.WithSyncer(exporter)
+	case "batch", "":
+		spanProcessor = sdktrace.WithBatcher(exporter)
+	default:
+		return nil, fmt.Errorf("unreachable: unknown span processor %s", os.Getenv("MOTEL_SPAN_PROCESSOR"))
+	}
+
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
+		spanProcessor,
 		sdktrace.WithResource(tracerResource),
 	)
 
