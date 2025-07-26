@@ -2,5 +2,6 @@
 __debug_bin*
 dist/
 motel
+!motel/
 motel.exe
 tmp*
