@@ -31,7 +31,7 @@ type NewTracerProviderFromEnvArgs struct {
 //   - MOTEL_SPAN_PROCESSOR=batch|sync
 //
 // Exporter environment variables (defaults to "none"):
-//   - MOTEL_TRACES_EXPORTER=file|none|otlpgrpc|otlphttp|stdout
+//   - MOTEL_TRACES_EXPORTER=file|none|otlpgrpc|otlphttp|stderr|stdout
 //   - MOTEL_TRACES_FILE_EXPORTER_FILE_PATH (required if MOTEL_TRACES_EXPORTER=file)
 //
 // See https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/ for other environment variables.
@@ -65,12 +65,16 @@ func NewTracerProviderFromEnv(ctx context.Context, args NewTracerProviderFromEnv
 		exporter, exporterErr = otlptracehttp.New(ctx)
 	// case "prettyprint":
 	// 	// TODO - write this one like logos
+	case "stderr":
+		exporter, exporterErr = stdouttrace.New(
+			stdouttrace.WithWriter(os.Stderr),
+		)
 	case "stdout":
 		exporter, exporterErr = stdouttrace.New(
 			stdouttrace.WithWriter(os.Stdout),
 		)
 	default:
-		return nil, fmt.Errorf("unreachable: unknown exporter %s", exporterType)
+		return nil, fmt.Errorf("unknown exporter (choices: file|none|otlpgrpc|otlphttp|stderr|stdout) %s", exporterType)
 	}
 	if exporterErr != nil {
 		return nil, fmt.Errorf("failed to create exporter: %w", exporterErr)
@@ -83,7 +87,7 @@ func NewTracerProviderFromEnv(ctx context.Context, args NewTracerProviderFromEnv
 	case "batch", "":
 		spanProcessor = sdktrace.WithBatcher(exporter)
 	default:
-		return nil, fmt.Errorf("unreachable: unknown span processor %s", os.Getenv("MOTEL_SPAN_PROCESSOR"))
+		return nil, fmt.Errorf("unknown span processor (choices: batch|sync): %s", os.Getenv("MOTEL_SPAN_PROCESSOR"))
 	}
 
 	tp := sdktrace.NewTracerProvider(

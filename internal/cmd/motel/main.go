@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
+	"os/signal"
+	"time"
 
 	"go.bbkane.com/motel"
 	"go.bbkane.com/warg"
@@ -19,10 +23,11 @@ import (
 var tracer = otel.Tracer("go.bbkane.com/motel/internal/cmd/motel")
 var version string
 
-func panicOn(err error) {
+func must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)
 	}
+	return v
 }
 
 func rolldice(ctx context.Context) {
@@ -44,22 +49,43 @@ func rolldice(ctx context.Context) {
 }
 
 func run(cmdCtx wargcore.Context) error {
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer func() {
+		fmt.Println("calling cancel")
+		cancel()
+	}()
 
-	tracerProvider, err := motel.NewTracerProviderFromEnv(ctx, motel.NewTracerProviderFromEnvArgs{
+	tracerProvider := must(motel.NewTracerProviderFromEnv(ctx, motel.NewTracerProviderFromEnvArgs{
 		AppName: cmdCtx.App.Name,
 		Version: cmdCtx.App.Version,
-	})
-	panicOn(err)
+	}))
 
-	// set globally
+	// set tracer provider globally
 	otel.SetTracerProvider(tracerProvider)
+	defer func() {
+		// shutdown in a new context since the main context will be canceled by the time this runs
+		err := tracerProvider.Shutdown(context.Background())
+		if err != nil {
+			panic(err)
+		}
+	}()
 
-	rolldice(ctx)
+	ticker := time.NewTicker(1 * time.Second)
+	defer func() {
+		fmt.Println("calling ticker stop")
+		ticker.Stop()
+	}()
 
-	err = tracerProvider.Shutdown(ctx)
-	panicOn(err)
-	return nil
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("context done")
+			return nil
+		case <-ticker.C:
+			fmt.Println("rolling dice")
+			rolldice(ctx)
+		}
+	}
 }
 
 func buildApp() wargcore.App {
