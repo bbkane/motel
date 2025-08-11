@@ -3,7 +3,7 @@ module go.bbkane.com/motel
 go 1.24
 
 require (
-	go.bbkane.com/warg v0.0.33
+	go.bbkane.com/warg v0.0.34
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.37.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.37.0
