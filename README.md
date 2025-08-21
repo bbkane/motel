@@ -29,6 +29,8 @@ See https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-varia
 
 ## Examples
 
+NOTE: all examples below use [this internal CLI](./internal/cmd/motel). Get it by cloning the repo.
+
 ### `file` + local [logdy](https://logdy.dev/)
 
 Create a file and start following it with logy using  [this config](https://github.com/bbkane/dotfiles/blob/master/logdy/dot-config/logdy.json):
@@ -71,7 +73,7 @@ While I'm using locally hosted OpenObserve since it's easy to run locally, this 
 
 Download OpenObserve (I use the OSS version) from the [downloads page](https://openobserve.ai/downloads/).
 
-Run it with some environemental variables:
+Run it with some environment variables:
 
 ```bash
 ZO_ROOT_USER_EMAIL=root@example.com \
@@ -101,3 +103,60 @@ View traces from the [Traces](http://127.0.0.1:5080/web/traces?org_identifier=de
 ## Notes
 
 See [Go Project Notes](https://www.bbkane.com/blog/go-project-notes/) for notes on development tooling.
+
+# Bonus: How I install [OpenObserve](https://openobserve.ai/) locally with [enventory](https://github.com/bbkane/enventory)
+
+Last updated: 2025-08-21
+
+I'm using [enventory](https://github.com/bbkane/enventory) to sconfigure OpenObserve. Unlike the quick instructions above (optimized for trying OpenObserve out), these instructions are optimized for quickly running OpenObserve locally once it's installed, as well as updating OpenObserve and adding it to new projects.
+
+First, download OpenObserve from the downloads page - make sure to switch the edition to "Open Source" and the platform to your platform. I like to run commands manually, so I follow the manual instructions. I install to `~/Apps/<name>`. So, for example: `~/Apps/openobserve-v0.15.0-rc3-linux-amd64-musl`. That way if I install a newer version, it can go in its own folder.
+
+On macOS, I had to unquarantine the CLI:
+
+```bash
+xattr -d com.apple.quarantine openobserve
+```
+
+Second, make an OpenObserve environment. We'll be  re-using these variables every time we update OpenObserve
+
+```bash
+enventory env create --name openobserve
+enventory var create --name ZO_ROOT_USER_EMAIL --value root@example.com --env openobserve
+enventory var create --name ZO_ROOT_USER_PASSWORD --value pass --env openobserve
+```
+
+Third, set up the environment for the OpenObserve install folder and reference the variables in the `openobserve` environment we just made.
+
+```bash
+cd ~/Apps/openobserve-v0.15.0-rc3-linux-amd64-musl
+enventory env create
+enventory var ref create --name ZO_ROOT_USER_EMAIL --ref-env openobserve --ref-var ZO_ROOT_USER_EMAIL
+enventory var ref create --name ZO_ROOT_USER_PASSWORD --ref-env openobserve --ref-var ZO_ROOT_USER_PASSWORD
+```
+
+Fourth, open the [Data sources > Traces page](http://127.0.0.1:5080/web/ingestion/custom/traces/opentelemetry?org_identifier=default) and turn the OTLP HTTP headers into environment variables, and create an environment to hold them. Example below, but the header seems to change with each install, so unfortunately you can't just copy the commands below.
+
+```bash
+enventory env create --name motel_otlphttp_openobserve
+enventory var create --name OTEL_EXPORTER_OTLP_ENDPOINT --value 'http://127.0.0.1:5080/api/default' --env motel_otlphttp_openobserve
+enventory var create --name OTEL_EXPORTER_OTLP_HEADERS --value 'Authorization=Basic cm9vdEBleGFtcGxlLmNvbToxZ0Yya1dwSGQ1cW1ObGRs' --env motel_otlphttp_openobserve
+```
+
+Finally, any time you want to run the CLI, start OpenObserve in one terminal window:
+
+```bash
+cd ~/Apps/openobserve-v0.15.0-rc3-linux-amd64-musl
+./openobserve
+```
+
+Then open a new terminal window, source the env and run the command.
+
+```bash
+source-env motel_otlphttp_openobserve
+go run ./internal/cmd/motel run
+```
+
+See traces at [the tracing page](http://localhost:5080/web/traces?org_identifier=default).
+
+Any time you want to update OpenObserve, download it to a new folder, reference the `openobserve` vars, again, and update the headers in `motel_otlphttp_openobserve`.
