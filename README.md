@@ -2,11 +2,11 @@
 
 A library to help me set up OTEL trace exports with environment variables. Similar to [autoexport](https://pkg.go.dev/go.opentelemetry.io/contrib/exporters/autoexport), but tailored to what I care about.
 
-## Project status (2025-06-26)
+# Project status (2025-06-26)
 
 `motel` is brand new and super unstable. I'll probably change a lot of things.
 
-## Use
+# Use
 
 Initialize in code:
 
@@ -27,11 +27,11 @@ MOTEL_TRACES_FILE_EXPORTER_FILE_PATH=tmp.jsonl  # required if MOTEL_TRACES_EXPOR
 
 See https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/ for other environment variables.
 
-## Examples
+# Examples
 
 NOTE: all examples below use [this internal CLI](./internal/cmd/motel). Get it by cloning the repo.
 
-### `file` + local [logdy](https://logdy.dev/)
+## `file` + local [logdy](https://logdy.dev/)
 
 Create a file and start following it with logy using  [this config](https://github.com/bbkane/dotfiles/blob/master/logdy/dot-config/logdy.json):
 
@@ -56,7 +56,9 @@ Head back to the browser to view traces coming in (might take a minute if using 
 
 ![logdy-demo](./README.assets/logdy-demo.png)
 
-### `stdout` (easiest and least useful)
+## `stdout`
+
+Not very readable, but useful to verify everything works.
 
 ```bash
 $ MOTEL_TRACES_EXPORTER=stdout go run ./internal/cmd/motel run
@@ -67,7 +69,7 @@ calling ticker stop
 calling cancel
 ```
 
-### `otlphttp` + locally hosted [OpenObserve](https://openobserve.ai)
+## `otlphttp` + locally hosted [OpenObserve](https://openobserve.ai)
 
 While I'm using locally hosted OpenObserve since it's easy to run locally, this should also work with OTEL vendors in the cloud: [Grafana](https://grafana.com/products/cloud/),  [Honeycomb](https://www.honeycomb.io/), [SigNoz](https://signoz.io/) and others I'm sure I'm forgetting right now
 
@@ -100,17 +102,17 @@ View traces from the [Traces](http://127.0.0.1:5080/web/traces?org_identifier=de
 
 ![openobserve-demo](./README.assets/openobserve-demo.png)
 
-## Notes
+# Notes
 
 See [Go Project Notes](https://www.bbkane.com/blog/go-project-notes/) for notes on development tooling.
 
-# Bonus: How I install [OpenObserve](https://openobserve.ai/) locally with [enventory](https://github.com/bbkane/enventory)
+# Configure OpenObserve](https://openobserve.ai/) with [enventory](https://github.com/bbkane/enventory)
 
 Last updated: 2025-08-21
 
-I'm using [enventory](https://github.com/bbkane/enventory) to sconfigure OpenObserve. Unlike the quick instructions above (optimized for trying OpenObserve out), these instructions are optimized for quickly running OpenObserve locally once it's installed, as well as updating OpenObserve and adding it to new projects.
+I'm using [enventory](https://github.com/bbkane/enventory) to configure OpenObserve. Unlike the quick instructions above (optimized for trying OpenObserve out), these instructions are optimized for quickly running OpenObserve locally once it's installed, as well as updating OpenObserve and adding it to new projects.
 
-First, download OpenObserve from the downloads page - make sure to switch the edition to "Open Source" and the platform to your platform. I like to run commands manually, so I follow the manual instructions. I install to `~/Apps/<name>`. So, for example: `~/Apps/openobserve-v0.15.0-rc3-linux-amd64-musl`. That way if I install a newer version, it can go in its own folder.
+First, download OpenObserve from the [downloads page](https://openobserve.ai/downloads/) - make sure to switch the edition to "Open Source" and the platform to your platform. I like to run commands manually, so I follow the manual instructions. I install to `~/Apps/<name>`. So, for example: `~/Apps/openobserve-v0.15.0-rc3-linux-amd64-musl`. That way if I install a newer version, it can go in its own folder.
 
 On macOS, I had to unquarantine the CLI:
 
@@ -133,6 +135,13 @@ cd ~/Apps/openobserve-v0.15.0-rc3-linux-amd64-musl
 enventory env create
 enventory var ref create --name ZO_ROOT_USER_EMAIL --ref-env openobserve --ref-var ZO_ROOT_USER_EMAIL
 enventory var ref create --name ZO_ROOT_USER_PASSWORD --ref-env openobserve --ref-var ZO_ROOT_USER_PASSWORD
+```
+
+Start OpenObserve
+
+```bash
+export-env "$PWD"
+./openobserve
 ```
 
 Fourth, open the [Data sources > Traces page](http://127.0.0.1:5080/web/ingestion/custom/traces/opentelemetry?org_identifier=default) and turn the OTLP HTTP headers into environment variables, and create an environment to hold them. Example below, but the header seems to change with each install, so unfortunately you can't just copy the commands below.
