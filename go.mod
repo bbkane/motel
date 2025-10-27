@@ -3,7 +3,7 @@ module go.bbkane.com/motel
 go 1.24
 
 require (
-	go.bbkane.com/warg v0.0.33
+	go.bbkane.com/warg v0.0.37
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.37.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.37.0
@@ -21,7 +21,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/testify v1.10.0 // indirect
+	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.bbkane.com/gocolor v0.0.5 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
